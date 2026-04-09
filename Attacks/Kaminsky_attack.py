@@ -5,7 +5,7 @@ import random
 import string
 
 target_dns = "10.9.0.53"
-auth_dns = "10.9.0.153"
+auth_dns = "10.9.1.153"
 target_port = 33333
 
 # 1. Generiamo un prefisso casuale per aggirare la cache

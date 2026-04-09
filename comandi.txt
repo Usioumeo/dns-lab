@@ -1,0 +1,15 @@
+modprobe tun
+echo "tun" | tee -a /etc/modules
+
+vi /etc/apk/repositories
+apk update
+apk add python3 docker
+
+rc-update add docker default
+service docker start
+addgroup ${USER} docker
+
+python3 -m venv kathara-env
+source kathara-env/bin/activate
+python3 -m pip install libtmux
+python3 -m  kathara check

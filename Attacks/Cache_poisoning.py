@@ -3,7 +3,7 @@ import struct
 import socket
 
 target_dns = "10.9.0.53"
-auth_dns = "10.9.0.153"
+auth_dns = "10.9.1.153"
 domain = "www.example.com"
 fake_ip = "6.6.6.6" 
 target_port = 33333 

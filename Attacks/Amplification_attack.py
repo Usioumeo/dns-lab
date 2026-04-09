@@ -1,6 +1,6 @@
 # 1. Definiamo gli IP
 victim_ip = "10.9.0.20"
-dns_server = "10.9.0.153"
+dns_server = "10.9.1.153"
 
 # 2. Costruiamo i layer del pacchetto
 ip_layer = IP(src=victim_ip, dst=dns_server)

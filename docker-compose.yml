@@ -29,7 +29,7 @@ services:
 
   # 3. La macchina dell'attaccante
   attacker:
-    image: kalilinux/kali-rolling
+    build: ./bind9-vuln
     container_name: attacker
     tty: true # Tiene il container acceso in background
     networks:
@@ -39,7 +39,7 @@ services:
 
   # 4. La Vittima (Per l'attacco di Amplificazione)
   victim:
-    image: ubuntu:latest
+    build: ./bind9-vuln
     container_name: victim
     tty: true
     networks:
