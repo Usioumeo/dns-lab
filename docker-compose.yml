@@ -4,6 +4,7 @@ services:
   # 1. Il DNS Ricorsivo Locale
   local-dns:
     build: ./bind9-vuln
+    image: bind9-base
     container_name: local-dns
     cap_add:
       - ALL
@@ -12,10 +13,11 @@ services:
         ipv4_address: 10.9.0.53
     volumes:
       - ./config/local-dns:/etc/bind
+    command: /bin/bash -c "named -g"
 
-# 2. Il DNS Autoritativo
+# 2. Il DNS Autoritativo (Root/TLD che reindirizza)
   auth-dns:
-    build: ./bind9-vuln
+    image: bind9-base
     container_name: auth-dns
     cap_add:
       - ALL
@@ -23,29 +25,61 @@ services:
       dns-net:
         ipv4_address: 10.9.0.153
     volumes:
-      - ./config/auth-dns:/etc/bind
+      - ./config/root-dns:/etc/bind
+    command: /bin/bash -c "named -g"
+
+  # Authoritative DNS per example.com
+  example-dns:
+    image: bind9-base
+    container_name: example-dns
+    cap_add:
+      - ALL
+    networks:
+      dns-net:
+        ipv4_address: 10.9.0.154
+    volumes:
+      - ./config/example-dns:/etc/bind
     # Iniettiamo il ritardo di 2 secondi PRIMA di avviare BIND9 (indispensabile per il cache poisoning)
     command: /bin/bash -c "tc qdisc add dev eth0 root netem delay 2000ms && named -g"
 
+  # Authoritative DNS per attacker.com
+  attacker-dns:
+    image: bind9-base
+    container_name: attacker-dns
+    cap_add:
+      - ALL
+    networks:
+      dns-net:
+        ipv4_address: 10.9.0.155
+    volumes:
+      - ./config/attacker-dns:/etc/bind
+      
+    command: /bin/bash -c "named -g"
+
   # 3. La macchina dell'attaccante
   attacker:
-    build: ./bind9-vuln
+    image: bind9-base
     container_name: attacker
+    cap_add:
+      - ALL
     tty: true # Tiene il container acceso in background
     networks:
       dns-net:
         ipv4_address: 10.9.0.10
-    command: /bin/bash -c "apt-get update && apt-get install -y python3-scapy tcpdump dnsutils && /bin/bash"
+    
+    volumes:
+      - ./Attacks:/attacks
 
   # 4. La Vittima (Per l'attacco di Amplificazione)
   victim:
-    build: ./bind9-vuln
+    image: bind9-base
     container_name: victim
+    cap_add:
+      - ALL
     tty: true
     networks:
       dns-net:
         ipv4_address: 10.9.0.20
-    command: /bin/bash -c "apt-get update && apt-get install -y tcpdump dnsutils && /bin/bash"
 
 networks:
   dns-net:

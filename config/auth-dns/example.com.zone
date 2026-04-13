@@ -9,3 +9,6 @@ $TTL 86400
 @   IN  NS      ns.example.com.
 ns  IN  A       10.9.0.153
 www IN  A       10.9.0.153
+
+attacker IN NS ns.attacker.example.com.
+ns.attacker IN A 10.9.0.10

@@ -1,3 +1,0 @@
-tcpdump -i eth0 -n udp port 53 (for amplification attack)
-
-dig @10.9.0.53 www.example.com (for cache poisoning and Kaminsky attack)
