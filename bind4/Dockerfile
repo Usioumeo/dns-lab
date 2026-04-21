@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --force-yes \
     wget build-essential libssl-dev dnsutils \
     flex libfl-dev libc6-dev net-tools iproute2 groff \
     && rm -rf /var/lib/apt/lists/*
-
+RUN apt
 WORKDIR /src
 
 # 3. Download and Patch Source

