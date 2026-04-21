@@ -1,0 +1,97 @@
+Debug turned ON, Level 5
+Version = named 4.9.11-REL Tue Apr 21 09:05:14 UTC 2026
+	root@53aa61f5f264:/src/bind-4.9.11/named
+bootfile = /etc/bind/named.boot
+fclose(3) succeeded
+named[8]: starting.  named 4.9.11-REL Tue Apr 21 09:05:14 UTC 2026
+	root@53aa61f5f264:/src/bind-4.9.11/named
+considering [127.0.0.1]
+dqp->dq_addr 127.0.0.1 d_dfd 21
+listening [127.0.0.1]
+loopback address: x100007f
+dqp->dq_addr 0.0.0.0 d_dfd 22
+
+ns_init(/etc/bind/named.boot)
+savehash GROWING to 2
+savehash GROWING to 2
+
+ content of zones before loading 
+zone origin attacker.com, new zone, source = /etc/bind/attacker.com.zone
+purge_zone(attacker.com,1)
+reloading zone
+db_load(/etc/bind/attacker.com.zone, attacker.com, 1, Nil)
+d='attacker.com', c=1, t=6, ttl=-1, data='ns.attacker.com.'
+db_update(attacker.com, 0x38da98f0, 0x38da98f0, 01, 0x38da9860)
+savehash GROWING to 2
+np_parent(0x0) couldn't find root entry
+db_update: adding 38da98f0
+d='attacker.com', c=1, t=2, ttl=-1, data='ns.attacker.com.'
+db_update(attacker.com, 0x38da9a00, 0x38da9a00, 01, 0x38da9860)
+match(0x38da98f0, 1, 6) 1, 6
+match(0x38da98f0, 1, 2) 1, 6
+db_update: adding 38da9a00
+d='ns.attacker.com', c=1, t=1, ttl=86400, data='10.9.0.155'
+db_update(ns.attacker.com, 0x38da9a40, 0x38da9a40, 01, 0x38da9860)
+savehash GROWING to 2
+match(0x38da98f0, 1, 6) 1, 6
+db_update: adding 38da9a40
+d='leak.attacker.com', c=1, t=2, ttl=86400, data='attacker.attacker.com.'
+db_update(leak.attacker.com, 0x38dad9c0, 0x38dad9c0, 01, 0x38da9860)
+match(0x38da98f0, 1, 6) 1, 6
+db_update: adding 38dad9c0
+d='attacker.attacker.com', c=1, t=1, ttl=86400, data='10.9.0.10'
+db_update(attacker.attacker.com, 0x38dada50, 0x38dada50, 01, 0x38da9860)
+match(0x38da98f0, 1, 6) 1, 6
+db_update: adding 38dada50
+d='*.attacker.com', c=1, t=1, ttl=86400, data='10.9.0.10'
+db_update(*.attacker.com, 0x38dadad0, 0x38dadad0, 01, 0x38da9860)
+match(0x38da98f0, 1, 6) 1, 6
+db_update: adding 38dadad0
+fclose(4) succeeded
+named[8]: primary zone "attacker.com" loaded (serial 2026040101)
+zone[1] type 1: 'attacker.com' z_time 0, z_refresh 0
+fclose(3) succeeded
+
+ content of zones after loading
+printzoneinfo(1):
+origin ='attacker.com', class = 1, type = primary, source = /etc/bind/attacker.com.zone
+z_refresh = 0, retry = 1800, expire = 604800, minimum = 86400, serial = 2026040101
+z_time = 0; flags 41
+exit ns_init(), need maintenance immediately
+Network and sort list:
+database initialized
+fclose(3) succeeded
+named[8]: Ready to answer queries.
+prime_cache: priming = 0
+named[8]: Return from getdtablesize() > FD_SETSIZE
+
+ns_maint(); now Tue Apr 21 09:20:27 2026
+printzoneinfo(0):
+origin ='.', class = 0, type = cachez_refresh = 0, retry = 0, expire = 0, minimum = 0, serial = 0
+z_time = 0; flags 0
+printzoneinfo(1):
+origin ='attacker.com', class = 1, type = primary, source = /etc/bind/attacker.com.zone
+z_refresh = 0, retry = 1800, expire = 604800, minimum = 86400, serial = 2026040101
+z_time = 0; flags 41
+sched_maint: Next interrupt in 3600 sec
+exit ns_maint()
+doadump()
+named[8]: dumping nameserver data
+fclose(3) succeeded
+named[8]: finished dumping nameserver data
+doadump()
+named[8]: dumping nameserver data
+fclose(3) succeeded
+named[8]: finished dumping nameserver data
+doadump()
+named[8]: dumping nameserver data
+fclose(3) succeeded
+named[8]: finished dumping nameserver data
+doadump()
+named[8]: dumping nameserver data
+fclose(3) succeeded
+named[8]: finished dumping nameserver data
+doadump()
+named[8]: dumping nameserver data
+fclose(3) succeeded
+named[8]: finished dumping nameserver data

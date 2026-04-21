@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # 1. Il DNS Ricorsivo Locale
+  local-dns:
+    build: ./bind42
+    image: bind4-base
+    container_name: local-dns
+    cap_add:
+      - ALL
+    networks:
+      dns-net:
+        ipv4_address: 10.9.0.53
+    volumes:
+      - ./config/local-dns:/etc/bind
+    command: /bin/bash -c "/usr/sbin/named -d 5 -b /etc/bind/named.boot && tail -f /dev/null"
+
+# 2. Il DNS Autoritativo (Root/TLD che reindirizza)
+  auth-dns:
+    image: bind4-base
+    container_name: auth-dns
+    cap_add:
+      - ALL
+    networks:
+      dns-net:
+        ipv4_address: 10.9.0.153
+    volumes:
+      - ./config/root-dns:/etc/bind
+    command: /bin/bash -c "/usr/sbin/named -d 5 -b /etc/bind/named.boot && tail -f /dev/null"
+
+  # Authoritative DNS per example.com
+  example-dns:
+    image: bind4-base
+    container_name: example-dns
+    cap_add:
+      - ALL
+    networks:
+      dns-net:
+        ipv4_address: 10.9.0.154
+    volumes:
+      - ./config/example-dns:/etc/bind
+    # Iniettiamo il ritardo di 2 secondi PRIMA di avviare BIND9 (indispensabile per il cache poisoning)
+    command: /bin/bash -c "tc qdisc add dev eth0 root netem delay 2000ms && /usr/sbin/named -d 5 -b /etc/bind/named.boot && tail -f /dev/null"
+
+  # Authoritative DNS per attacker.com
+  attacker-dns:
+    image: bind4-base
+    container_name: attacker-dns
+    #cap_add:
+    #  - ALL
+    networks:
+      dns-net:
+        ipv4_address: 10.9.0.155
+    volumes:
+      - ./config/attacker-dns:/etc/bind
+      
+    command: /bin/bash -c "/usr/sbin/named -d 5 -b /etc/bind/named.boot && tail -f /dev/null"
+
+  # 3. La macchina dell'attaccante
+  attacker:
+    image: bind4-base
+    container_name: attacker
+    cap_add:
+      - ALL
+    tty: true # Tiene il container acceso in background
+    networks:
+      dns-net:
+        ipv4_address: 10.9.0.10
+    
+    volumes:
+      - ./Attacks:/attacks
+
+  # 4. La Vittima (Per l'attacco di Amplificazione)
+  victim:
+    image: bind4-base
+    container_name: victim
+    cap_add:
+      - ALL
+    tty: true
+    networks:
+      dns-net:
+        ipv4_address: 10.9.0.20
+
+networks:
+  dns-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.9.0.0/24

