@@ -66,7 +66,7 @@ s.bind(("eth0", 0))
 # ==========================================
 # <--- TASK 4: How many packets to cover all possible Transaction IDs? 
 # HINT: The DNS TXID is a 16-bit field. What is the maximum value?
-MAX_TXID = 0 
+MAX_TXID = 2**16
 
 for txid in range(0, MAX_TXID):
     struct.pack_into('!H', raw_bytes, 42, txid)
