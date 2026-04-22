@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # 1. Il DNS Ricorsivo Locale
+  local-dns:
+    build: ./bind9-vuln
+    container_name: local-dns
+    cap_add:
+      - ALL
+    networks:
+      dns-net:
+        ipv4_address: 10.9.0.53
+    volumes:
+      - ./config/local-dns:/etc/bind
+
+# 2. Il DNS Autoritativo
+  auth-dns:
+    build: ./bind9-vuln
+    container_name: auth-dns
+    cap_add:
+      - ALL
+    networks:
+      dns-net:
+        ipv4_address: 10.9.0.153
+    volumes:
+      - ./config/auth-dns:/etc/bind
+    # Iniettiamo il ritardo di 2 secondi PRIMA di avviare BIND9 (indispensabile per il cache poisoning)
+    command: /bin/bash -c "tc qdisc add dev eth0 root netem delay 2000ms && named -g"
+
+  # 3. La macchina dell'attaccante
+  attacker:
+    image: kalilinux/kali-rolling
+    container_name: attacker
+    tty: true # Tiene il container acceso in background
+    networks:
+      dns-net:
+        ipv4_address: 10.9.0.10
+    command: /bin/bash -c "apt-get update && apt-get install -y python3-scapy tcpdump dnsutils && /bin/bash"
+
+  # 4. La Vittima (Per l'attacco di Amplificazione)
+  victim:
+    image: ubuntu:latest
+    container_name: victim
+    tty: true
+    networks:
+      dns-net:
+        ipv4_address: 10.9.0.20
+    command: /bin/bash -c "apt-get update && apt-get install -y tcpdump dnsutils && /bin/bash"
+
+networks:
+  dns-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.9.0.0/24
