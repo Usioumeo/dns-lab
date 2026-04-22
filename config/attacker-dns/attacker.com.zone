@@ -1,6 +1,0 @@
-@   IN  SOA     ns.attacker.com. admin.attacker.com. ( 2026040101 3600 1800 604800 86400 )
-@   IN  NS      ns.attacker.com.
-ns  86400 IN  A       10.9.0.155
-leak  86400 IN  NS  attacker.attacker.com.
-attacker 86400 IN A 10.9.0.10
-*   86400 IN  A       10.9.0.10

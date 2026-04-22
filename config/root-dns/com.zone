@@ -1,9 +1,0 @@
-@   IN  SOA     ns.com. admin.com. ( 2026040101 3600 1800 604800 86400 )
-@   IN  NS      ns.com.
-ns  86400  IN  A       10.9.0.153
-
-example.com.  86400  IN  NS  ns.example.com.
-ns.example.com. 86400  IN  A   10.9.0.154
-
-attacker.com.  86400  IN  NS  ns.attacker.com.
-ns.attacker.com. 86400 IN  A   10.9.0.155

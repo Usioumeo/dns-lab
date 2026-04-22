@@ -1,4 +1,5 @@
+$TTL 86400
 @   IN  SOA     ns.example.com. admin.example.com. ( 2026040101 3600 1800 604800 86400 )
 @   IN  NS      ns.example.com.
-ns  86400 IN  A       10.9.0.154
-www 86400 IN  A       10.9.0.154
+ns  IN  A       10.9.0.154
+www IN  A       10.9.0.154

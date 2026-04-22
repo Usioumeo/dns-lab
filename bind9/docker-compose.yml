@@ -10,7 +10,7 @@ services:
     - ALL
     command: tail -f /dev/null
     container_name: attacker
-    image: bind9-base
+    image: bind9
     networks:
       dns-net:
         ipv4_address: 10.9.0.10
@@ -22,7 +22,7 @@ services:
     - ALL
     command: /bin/bash -c "named -g"
     container_name: attacker-dns
-    image: bind9-base
+    image: bind9
     networks:
       dns-net:
         ipv4_address: 10.9.0.155
@@ -33,7 +33,7 @@ services:
     - ALL
     command: /bin/bash -c "named -g"
     container_name: root-dns
-    image: bind9-base
+    image: bind9
     networks:
       dns-net:
         ipv4_address: 10.9.0.153
@@ -42,22 +42,21 @@ services:
   example-dns:
     cap_add:
     - ALL
-    command: /bin/bash -c "tc qdisc add dev eth0 root netem delay 2000ms && named
-      -g"
+    command: /bin/bash -c "tc qdisc add dev eth0 root netem delay 2000ms && named -g"
     container_name: example-dns
-    image: bind9-base
+    image: bind9
     networks:
       dns-net:
         ipv4_address: 10.9.0.154
     volumes:
     - ./config/example-dns:/etc/bind
   local-dns:
-    build: ./bind8
+    build: .
     cap_add:
     - ALL
-    command: /bin/bash -c "named -b /etc/bind/named.boot && tail -f /dev/null"
+    command: /bin/bash -c "named -g && tail -f /dev/null"
     container_name: local-dns
-    image: bind8-base
+    image: bind9
     networks:
       dns-net:
         ipv4_address: 10.9.0.53
@@ -69,7 +68,7 @@ services:
     - ALL
     command: tail -f /dev/null
     container_name: victim
-    image: bind9-base
+    image: bind9
     networks:
       dns-net:
         ipv4_address: 10.9.0.20
