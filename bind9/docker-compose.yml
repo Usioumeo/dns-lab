@@ -62,7 +62,21 @@ services:
         ipv4_address: 10.9.0.53
     volumes:
     - ./config/local-dns:/etc/bind
-    - ./config/resolv.conf:/etc/resolv.conf:ro
+
+  example-dnssec:
+    cap_add:
+      - ALL
+    # Same delay as example-dns
+    command: /bin/bash -c "tc qdisc add dev eth0 root netem delay 2000ms && named -g"
+    container_name: example-dnssec
+    image: bind9
+    networks:
+      dns-net:
+        ipv4_address: 10.9.0.160
+    volumes:
+      - ./config/example-dnssec:/etc/bind
+    tty: true
+
   victim:
     cap_add:
     - ALL
