@@ -67,7 +67,7 @@ services:
     networks:
       dns-net:
         ipv4_address: 10.9.0.10
-    command: /bin/bash -c "tail -f /dev/null"
+    command: /bin/bash -c "tc qdisc add dev eth0 root netem delay ${DELAY} && tail -f /dev/null"
     volumes:
       - ../Attacks/solutions:/attacks
 
@@ -78,7 +78,7 @@ services:
     cap_add:
       - ALL
     tty: true
-    command:  /bin/bash -c "tail -f /dev/null"
+    command:  /bin/bash -c "tc qdisc add dev eth0 root netem delay ${DELAY} && tail -f /dev/null"
     networks:
       dns-net:
         ipv4_address: 10.9.0.20

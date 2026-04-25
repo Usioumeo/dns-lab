@@ -16,7 +16,7 @@ services:
         ipv4_address: 10.9.0.10
     tty: true
     volumes:
-    - ../Attacks:/attacks
+      - ../Attacks/solutions:/attacks
   attacker-dns:
     cap_add:
     - ALL

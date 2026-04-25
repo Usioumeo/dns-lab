@@ -23,16 +23,16 @@ RUN  apt-get update && apt-get install -y --force-yes \
     nano \
     curl
 
-RUN pip3 install scapy==2.4.3
+RUN pip3 install scapy==2.4.3 z3-solver==4.8.5.0
 # Scarica la versione vulnerabile di BIND9 (9.4.2)
-RUN wget https://ftp.isc.org/isc/bind9/9.4.2/bind-9.4.2.tar.gz
-RUN tar -xzvf bind-9.4.2.tar.gz && rm bind-9.4.2.tar.gz
+RUN wget https://ftp.isc.org/isc/bind9/9.4.1/bind-9.4.1.tar.gz
+RUN tar -xzvf bind-9.4.1.tar.gz && rm bind-9.4.1.tar.gz
 
 # Compila e installa BIND9
-WORKDIR /bind-9.4.2
+WORKDIR /bind-9.4.1
 RUN ./configure --sysconfdir=/etc/bind && make && make install
 
-RUN rm -rf bind-9.4.2 bind-9.4.2.tar.gz \
+RUN rm -rf bind-9.4.1 bind-9.4.1.tar.gz \
     && apt-get purge -y --auto-remove wget build-essential \
     && rm -rf /var/lib/apt/lists/*
 # Crea l'utente bind e la directory per le configurazioni

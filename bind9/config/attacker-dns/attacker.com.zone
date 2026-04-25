@@ -4,7 +4,10 @@ $TTL 86400
 ns  IN  A       10.9.0.155
 
 ; Redirect queries for leak.attacker.com directly to the attacker machine (10.9.0.10)
-leak  IN  NS  attacker.attacker.com.
-attacker IN A 10.9.0.10
+;leak  IN  NS  attacker.attacker.com.
+;attacker IN A 10.9.0.10
 
-*   IN  A       10.9.0.10
+;*   IN  A       10.9.0.10
+; No wildcard - it would short-circuit the CNAME chain
+leak     IN  NS   ns.leak.attacker.com.
+ns.leak  IN  A    10.9.0.10
