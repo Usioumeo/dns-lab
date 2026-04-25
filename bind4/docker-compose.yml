@@ -16,9 +16,9 @@ services:
     command: /bin/bash -c "tc qdisc add dev eth0 root netem delay ${DELAY} &&/usr/sbin/named -d 5 -b /etc/bind/named.boot && tail -f /dev/null"
 
 # 2. Il DNS Autoritativo (Root/TLD che reindirizza)
-  auth-dns:
+  root-dns:
     image: bind4
-    container_name: auth-dns
+    container_name: root-dns
     cap_add:
       - ALL
     networks:
@@ -53,7 +53,6 @@ services:
         ipv4_address: 10.9.0.155
     volumes:
       - ./config/attacker-dns:/etc/bind
-      - ../Attacks/solutions:/attacks
       
     command: /bin/bash -c "tc qdisc add dev eth0 root netem delay ${DELAY} && /usr/sbin/named -d 5 -b /etc/bind/named.boot && tail -f /dev/null"
 
@@ -69,7 +68,7 @@ services:
         ipv4_address: 10.9.0.10
     command: /bin/bash -c "tc qdisc add dev eth0 root netem delay ${DELAY} && tail -f /dev/null"
     volumes:
-      - ../Attacks/solutions:/attacks
+      - ../attacks:/attacks
 
   # 4. La Vittima (Per l'attacco di Amplificazione)
   victim:
