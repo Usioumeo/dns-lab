@@ -10,6 +10,7 @@ echo "[*] Step 2: Generating Key Signing Key (KSK)..."
 dnssec-keygen -f KSK -a RSASHA1 -b 1024 -n ZONE example.com
 
 echo "[*] Adding public keys to the zone file..."
+echo "" >> example.com.zone
 cat Kexample.com.+005+*.key >> example.com.zone
 
 echo "[*] Step 3: Signing the zone..."
