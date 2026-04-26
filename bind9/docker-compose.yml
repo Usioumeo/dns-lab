@@ -8,7 +8,7 @@ services:
   attacker:
     cap_add:
     - ALL
-    command: tail -f /dev/null
+    command:  /bin/bash -c "tc qdisc add dev eth0 root netem delay 10ms && tail -f /dev/null"
     container_name: attacker
     image: bind9
     networks:
@@ -20,7 +20,7 @@ services:
   attacker-dns:
     cap_add:
     - ALL
-    command: /bin/bash -c "named -g"
+    command:  /bin/bash -c "tc qdisc add dev eth0 root netem delay 10ms &&named -g"
     container_name: attacker-dns
     image: bind9
     networks:
@@ -31,7 +31,7 @@ services:
   root-dns:
     cap_add:
     - ALL
-    command: /bin/bash -c "named -g"
+    command: /bin/bash -c "tc qdisc add dev eth0 root netem delay 10ms && named -g"
     container_name: root-dns
     image: bind9
     networks:
@@ -42,7 +42,7 @@ services:
   example-dns:
     cap_add:
     - ALL
-    command: /bin/bash -c "tc qdisc add dev eth0 root netem delay 2000ms && named -g"
+    command: /bin/bash -c "tc qdisc add dev eth0 root netem delay 10ms && named -g"
     container_name: example-dns
     image: bind9
     networks:
@@ -54,7 +54,7 @@ services:
     build: .
     cap_add:
     - ALL
-    command: /bin/bash -c "named -g && tail -f /dev/null"
+    command: /bin/bash -c "tc qdisc add dev eth0 root netem delay 10ms && named -g && tail -f /dev/null"
     container_name: local-dns
     image: bind9
     networks:
@@ -67,7 +67,7 @@ services:
     cap_add:
       - ALL
     # Same delay as example-dns
-    command: /bin/bash -c "tc qdisc add dev eth0 root netem delay 2000ms && named -g"
+    command: /bin/bash -c "tc qdisc add dev eth0 root netem delay 10ms && named -g"
     container_name: example-dnssec
     image: bind9
     networks:
@@ -80,7 +80,7 @@ services:
   victim:
     cap_add:
     - ALL
-    command: tail -f /dev/null
+    command: /bin/bash -c "tc qdisc add dev eth0 root netem delay 10ms && tail -f /dev/null"
     container_name: victim
     image: bind9
     networks:

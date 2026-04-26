@@ -1,35 +1,10 @@
-# Usa un vecchio sistema operativo per compatibilità con le librerie storiche
-FROM debian:jessie-slim
+FROM dns-lab-runtime:latest
 
-# Aggiorna i repository a archive.debian.org per Jessie (EOL)
-RUN echo "deb http://archive.debian.org/debian/ jessie main" > /etc/apt/sources.list && \
-    echo "deb http://archive.debian.org/debian-security jessie/updates main" >> /etc/apt/sources.list && \
-    echo "Acquire::Check-Valid-Until false;" > /etc/apt/apt.conf.d/99no-check-valid-until
-
-# Installa le dipendenze, compila BIND9, e pulisci l'ambiente in un singolo layer per ridurre l'uso del disco
-#apt-get update &&
-RUN  apt-get update && apt-get install -y --force-yes \
-    wget \
-    build-essential \
-    libssl-dev \
-    dnsutils \
-    python3-pip \
-    tcpdump \
-    net-tools \
-    iproute2 \
-    iputils-ping \
-    iptables \
-    procps \
-    nano \
-    curl
-
-RUN pip3 install scapy==2.4.3 z3-solver==4.8.5.0
-# Scarica la versione vulnerabile di BIND9 (9.4.2)
 RUN wget https://ftp.isc.org/isc/bind9/9.4.1/bind-9.4.1.tar.gz
 RUN tar -xzvf bind-9.4.1.tar.gz && rm bind-9.4.1.tar.gz
-
-# Compila e installa BIND9
 WORKDIR /bind-9.4.1
+# Compila e installa BIND9
+
 RUN ./configure --sysconfdir=/etc/bind && make && make install
 
 RUN rm -rf bind-9.4.1 bind-9.4.1.tar.gz \

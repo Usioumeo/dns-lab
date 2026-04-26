@@ -1,16 +1,5 @@
-FROM debian:jessie-slim
+FROM dns-lab-runtime:latest
 
-# 1. Setup Archive Repositories
-RUN echo "deb http://archive.debian.org/debian/ jessie main" > /etc/apt/sources.list && \
-    echo "deb http://archive.debian.org/debian-security jessie/updates main" >> /etc/apt/sources.list && \
-    echo "Acquire::Check-Valid-Until false;" > /etc/apt/apt.conf.d/99no-check-valid-until
-
-# 2. Install Build Tools
-RUN apt-get update && apt-get install -y --force-yes \
-    wget build-essential libssl-dev dnsutils \
-    flex libfl-dev libc6-dev net-tools iproute2 groff python3-pip tcpdump\
-    && rm -rf /var/lib/apt/lists/*
-RUN pip3 install scapy==2.4.3
 WORKDIR /src/bind-4.9.11
 
 # 3. Download and Patch Source (Corrected directory handling)
@@ -19,6 +8,7 @@ RUN wget -qO- https://ftp.isc.org/isc/bind4/src/DEPRECATED/4.9.11/bind-4.9.11-RE
 # Replace the BSD-defaulted Makefile with our Linux-patched version
 COPY Makefile .
 
+# Compile patches
 RUN sed -i 's/#include <nlist.h>//g' named/ns_udp.c && \
     sed -i 's/strpbrk/bind_strpbrk/g' compat/lib/strpbrk.c && \
     sed -i 's/dprintf/bind_dprintf/g' res/gethnamaddr.c && \
