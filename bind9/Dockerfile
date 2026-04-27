@@ -5,7 +5,7 @@ RUN tar -xzvf bind-9.4.1.tar.gz && rm bind-9.4.1.tar.gz
 WORKDIR /bind-9.4.1
 # Compila e installa BIND9
 
-RUN ./configure --sysconfdir=/etc/bind && make && make install
+RUN ./configure --sysconfdir=/etc/bind --with-openssl && make && make install
 
 RUN rm -rf bind-9.4.1 bind-9.4.1.tar.gz \
     && apt-get purge -y --auto-remove wget build-essential \
