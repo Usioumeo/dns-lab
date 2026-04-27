@@ -26,7 +26,7 @@ def build_spoofed_dns_request(from_ip, from_port, to_port, qname, qtype):
 # --- TESTING THE FUNCTION ---
 print("[*] Test: Sending a normal 'A' query for example.com...")
 
-# SOLUTION 4: Calling the function with real parameters for a malicious query
+# SOLUTION 2: Calling the function with real parameters for a malicious query
 my_packet = build_spoofed_dns_request(
     from_ip = attacker_ip, 
     from_port = RandShort(), 
