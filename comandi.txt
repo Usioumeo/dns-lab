@@ -13,9 +13,7 @@ addgroup ${USER} docker
 
 
 
-git clone https://github.com/Usioumeo/dns-lab.git
-mv dns-lab/* . && rm -r dns-lab
-chmod +x build-images.sh
+git clone https://github.com/Usioumeo/dns-lab.git && mv dns-lab/* . && rm -r dns-lab && chmod +x build-images.sh
 ./build-images.sh
 docker builder prune
 docker images -a
