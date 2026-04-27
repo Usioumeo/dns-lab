@@ -3,7 +3,7 @@ echo "tun" | tee -a /etc/modules
 
 vi /etc/apk/repositories
 apk update
-apk add --no-cache python3 docker docker-compose btop bind-tools p7 openssl nano vi
+apk add --no-cache python3 docker docker-compose btop bind-tools p7zip nano git
 
 rc-update add docker default
 service docker start
@@ -14,6 +14,7 @@ addgroup ${USER} docker
 
 
 git clone https://github.com/Usioumeo/dns-lab.git
+mv dns-lab/* . && rm -r dns-lab
 chmod +x build-images.sh
 ./build-images.sh
 docker builder prune

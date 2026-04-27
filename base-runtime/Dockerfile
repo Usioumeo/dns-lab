@@ -7,7 +7,7 @@ RUN echo "deb http://archive.debian.org/debian/ jessie main" > /etc/apt/sources.
 
 # 2. Install Build Tools
 RUN apt-get update && apt-get install -y --force-yes \
-    wget build-essential libfl-dev python3-pip \
+    wget build-essential libfl-dev python3-pip openssl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip3 install scapy==2.4.3  z3-solver==4.8.5.0
