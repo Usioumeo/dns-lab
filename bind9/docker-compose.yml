@@ -7,9 +7,8 @@ networks:
 services:
   attacker:
     cap_add:
-    #ip link set dev eth0 txqueuelen 10000 && tc qdisc replace dev eth0 root netem delay 10ms limit 100000 &&
     - ALL
-    command:  /bin/bash -c "tc qdisc replace dev eth0 root netem delay 10ms limit 7000 && tail -f /dev/null"
+    command:  /bin/bash -c "tc qdisc add dev eth0 root netem delay 10ms && tail -f /dev/null"
     container_name: attacker
     image: bind9
     networks:
@@ -55,7 +54,7 @@ services:
     build: .
     cap_add:
     - ALL
-    command: /bin/bash -c "tc qdisc add dev eth0 root netem delay 100ms && named -g && tail -f /dev/null"
+    command: /bin/bash -c "tc qdisc add dev eth0 root netem delay 10ms && named -g && tail -f /dev/null"
     container_name: local-dns
     image: bind9
     networks:
