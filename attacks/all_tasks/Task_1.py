@@ -28,8 +28,8 @@ my_packet = # YOUR CODE HERE
 reply = sr1(my_packet, verbose=0, timeout=2)
 
 if reply:
-    print(f"[+] Success! Packet successfully sent and received.")
-    print(f"    -> Question Size: {len(my_packet)} bytes")
-    print(f"    -> Answer Size: {len(reply)} bytes")
+    print("[+] Success! Packet successfully sent and received.")
+    print("    -> Question Size: {} bytes".format(len(my_packet)))
+    print("    -> Answer Size: {} bytes".format(len(reply)))
 else:
     print("[-] No answer received. Check your packet construction.")

